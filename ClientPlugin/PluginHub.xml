@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
-  <Id>TODO: github-user/project-name</Id>
+  <Id>cvusmo/AdvancedDisplaySystem</Id>
   <GroupId>TODO: github-user/project-name</GroupId>
-  <FriendlyName>TODO: PluginTemplate</FriendlyName>
-  <Author>TODO: Author Name</Author>
+  <FriendlyName>AdvancedDisplaySystem</FriendlyName>
+  <Author>cvusmo</Author>
   <Commit>TODO: Git commit hash</Commit>
   <SourceDirectories>
     <Directory>ClientPlugin</Directory>
