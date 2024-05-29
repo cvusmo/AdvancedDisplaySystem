@@ -5,58 +5,99 @@ using VRageMath;
 using Sandbox.ModAPI.Ingame;
 using System;
 using System.Net.Mime;
+using cvusmo.AdvancedDisplaySystem;
 
 namespace cvusmo.AdvancedDisplaySystem
 {
-    public class MonitorCore
+    public class Core
     {
         private Sandbox.ModAPI.IMyCameraBlock camera;
         private Sandbox.ModAPI.IMyTextSurface lcd;
         private Sandbox.ModAPI.IMyCockpit cockpit;
 
-        public MonitorCore()
+        public Core()
         {
-            // Get the player's grid terminal system
-            var grid = MyAPIGateway.Session.LocalHumanPlayer.Controller.ControlledEntity.Entity.GetTopMostParent() as IMyCubeGrid;
-            var gridTerminalSystem = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(grid);
+            try
+            {
+                if (MyAPIGateway.Session == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Session is null");
+                    return;
+                }
 
-            // Initialize camera and LCD
-            camera = gridTerminalSystem.GetBlockWithName("Camera") as Sandbox.ModAPI.IMyCameraBlock;
-            lcd = gridTerminalSystem.GetBlockWithName("LCD") as Sandbox.ModAPI.IMyTextSurface;
+                if (MyAPIGateway.Session.LocalHumanPlayer == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "LocalHumanPlayer is null");
+                    return;
+                }
 
-            // Debug: Check if camera and LCD were found
-            if (camera == null)
-            {
-                MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Camera not found!");
-            }
-            else
-            {
-                MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Camera found!");
-            }
+                var controller = MyAPIGateway.Session.LocalHumanPlayer.Controller;
+                if (controller == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Controller is null");
+                    return;
+                }
 
-            if (lcd == null)
-            {
-                MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "LCD not found!");
-            }
-            else
-            {
-                MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "LCD found!");
-            }
+                var controlledEntity = controller.ControlledEntity;
+                if (controlledEntity == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "ControlledEntity is null");
+                    return;
+                }
 
-            // Initialize cockpit
-            cockpit = gridTerminalSystem.GetBlockWithName("MV-100 Cockpit") as Sandbox.ModAPI.IMyCockpit;
-            if (cockpit == null)
-            {
-                MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Cockpit not found!");
-                return;
-            }
-            else
-            {
-                MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Cockpit found!");
-            }
+                var grid = controlledEntity.Entity.GetTopMostParent() as IMyCubeGrid;
+                if (grid == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Grid is null");
+                    return;
+                }
 
-            // Set up cockpit screens
-            SetupCockpitScreens();
+                var gridTerminalSystem = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid(grid);
+                if (gridTerminalSystem == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "GridTerminalSystem is null");
+                    return;
+                }
+
+                camera = gridTerminalSystem.GetBlockWithName("Camera") as Sandbox.ModAPI.IMyCameraBlock;
+                lcd = gridTerminalSystem.GetBlockWithName("LCD") as Sandbox.ModAPI.IMyTextSurface;
+
+                // Debug: Check if camera and LCD were found
+                if (camera == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Camera not found!");
+                }
+                else
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Camera found!");
+                }
+
+                if (lcd == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "LCD not found!");
+                }
+                else
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "LCD found!");
+                }
+
+                cockpit = gridTerminalSystem.GetBlockWithName("MV-100 Cockpit") as Sandbox.ModAPI.IMyCockpit;
+                if (cockpit == null)
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Cockpit not found!");
+                    return;
+                }
+                else
+                {
+                    MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Cockpit found!");
+                }
+
+                SetupCockpitScreens();
+            }
+            catch (Exception ex)
+            {
+                MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", $"core Constructor Exception: {ex.Message}");
+            }
         }
 
         private void SetupCockpitScreens()
@@ -130,19 +171,17 @@ namespace cvusmo.AdvancedDisplaySystem
                 MyDetectedEntityInfo info = camera.Raycast(1000);
                 string output = info.IsEmpty() ? "No entity detected." : $"Detected: {info.Name}";
 
-                // Display on LCD
                 if (lcd != null)
                 {
                     lcd.WriteText(output);
                 }
 
-                // Update cockpit screens
                 UpdateCockpitScreens(output);
             }
         }
+
         internal void UpdateCockpitScreens(string info)
         {
-            // Update each cockpit screen with new info
             if (cockpit != null)
             {
                 // Left Screen

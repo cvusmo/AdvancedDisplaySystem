@@ -1,88 +1,127 @@
-﻿using System;
-using System.Reflection;
-using HarmonyLib;
+﻿using HarmonyLib;
 using Sandbox.ModAPI;
+using System.Reflection;
+using System;
 using VRage.Plugins;
-using VRage.Game.ModAPI;
+using cvusmo.AdvancedDisplaySystem;
 
-namespace cvusmo.AdvancedDisplaySystem
+public class Plugin : IPlugin, IDisposable
 {
-    public class Plugin : IPlugin, IDisposable
+    public const string Name = "AdvancedDisplaySystem";
+    public static Plugin Instance { get; private set; }
+
+    private Core _core;
+    private bool _coreInitialized = false;
+    private bool _playerInCockpit;
+    private IMyCockpit _currentCockpit;
+
+    public void Init(object gameInstance)
     {
-        public const string Name = "AdvancedDisplaySystem";
-        public static Plugin Instance { get; private set; }
-
-        private MonitorCore monitorCore;
-        private IMyPlayer player;
-        private IMyCockpit currentCockpit;
-        private bool playerInCockpit = false;
-
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        public void Init(object gameInstance)
+        try
         {
             Instance = this;
 
-            // TODO: Put your one time initialization code here.
-            Harmony harmony = new Harmony(Name);
+            // One-time initialization code
+            var harmony = new Harmony(Name);
             harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-            monitorCore = new MonitorCore();
-            player = MyAPIGateway.Session.LocalHumanPlayer;
-            MyAPIGateway.Utilities.ShowMessage("AdvancedDisplaySystem", "Advanced Display System Initialized");
-        }
+            MyAPIGateway.Utilities.ShowMessage(Name, "Plugin Init Start");
 
-        public void Update()
+            if (MyAPIGateway.Session == null)
+            {
+                MyAPIGateway.Utilities.ShowMessage(Name, "Session is null");
+                return;
+            }
+
+            MyAPIGateway.Session.OnSessionReady += OnSessionReady;
+        }
+        catch (Exception ex)
         {
+            MyAPIGateway.Utilities.ShowMessage(Name, $"Init Exception: {ex.Message}");
+            throw;
+        }
+    }
+
+    private void OnSessionReady()
+    {
+        try
+        {
+            if (MyAPIGateway.Session?.LocalHumanPlayer == null)
+            {
+                MyAPIGateway.Utilities.ShowMessage(Name, "LocalHumanPlayer is null");
+                return;
+            }
+
+            MyAPIGateway.Utilities.ShowMessage(Name, "AdvancedDisplaySystem Session Ready");
+            _core = new Core();
+            _coreInitialized = true;
+            MyAPIGateway.Utilities.ShowMessage(Name, "AdvancedDisplaySystem Core Initialized");
+        }
+        catch (Exception ex)
+        {
+            MyAPIGateway.Utilities.ShowMessage(Name, $"AdvancedDisplaySystem Core Initialization Exception: {ex.Message}");
+            throw;
+        }
+    }
+
+    public void Update()
+    {
+        if (_coreInitialized)
+        {
+            var player = MyAPIGateway.Session.LocalHumanPlayer;
             if (player?.Controller?.ControlledEntity?.Entity is IMyCockpit cockpit)
             {
-                if (!playerInCockpit)
+                if (!_playerInCockpit)
                 {
-                    playerInCockpit = true;
-                    currentCockpit = cockpit;
+                    _playerInCockpit = true;
+                    _currentCockpit = cockpit;
                     OnPlayerEnterCockpit(cockpit);
                 }
             }
-            else if (playerInCockpit)
+            else if (_playerInCockpit)
             {
-                playerInCockpit = false;
-                OnPlayerExitCockpit(currentCockpit);
-                currentCockpit = null;
+                _playerInCockpit = false;
+                OnPlayerExitCockpit(_currentCockpit);
+                _currentCockpit = null;
             }
         }
-        internal void OnPlayerEnterCockpit(IMyCockpit cockpit)
-        {
-            MyAPIGateway.Utilities.ShowMessage(Name, "Player entered cockpit");
-            monitorCore.UpdateCockpitScreens("Player entered cockpit");
-        }
-
-        internal void OnPlayerExitCockpit(IMyCockpit cockpit)
-        {
-            MyAPIGateway.Utilities.ShowMessage(Name, "Player exited cockpit");
-            monitorCore.UpdateCockpitScreens("Player exited cockpit");
-        }
-
-        public void Dispose()
-        {
-            // Clean up resources
-            monitorCore = null;
-        }
-
-        public void HandleInput()
-        {
-            // Handle input if needed
-        }
-
-        // TODO: Uncomment and use this method to create a plugin configuration dialog
-        // ReSharper disable once UnusedMember.Global
-        /*public void OpenConfigDialog()
-        {
-            MyGuiSandbox.AddScreen(new MyPluginConfigDialog());
-        }*/
-
-        //TODO: Uncomment and use this method to load asset files
-        /*public void LoadAssets(string folder)
-        {
-
-        }*/
     }
+
+    private void OnPlayerEnterCockpit(IMyCockpit cockpit)
+    {
+        MyAPIGateway.Utilities.ShowMessage(Name, "Player entered cockpit");
+        _core.UpdateCockpitScreens("Player entered cockpit");
+    }
+
+    private void OnPlayerExitCockpit(IMyCockpit cockpit)
+    {
+        MyAPIGateway.Utilities.ShowMessage(Name, "Player exited cockpit");
+        _core.UpdateCockpitScreens("Player exited cockpit");
+    }
+
+    public void Dispose()
+    {
+        // Clean up resources
+        _core = null;
+        if (MyAPIGateway.Session != null)
+        {
+            MyAPIGateway.Session.OnSessionReady -= OnSessionReady;
+        }
+    }
+
+    public void HandleInput()
+    {
+        // Handle input if needed
+    }
+
+    // Uncomment and use this method to create a plugin configuration dialog
+    // public void OpenConfigDialog()
+    // {
+    //     MyGuiSandbox.AddScreen(new MyPluginConfigDialog());
+    // }
+
+    // Uncomment and use this method to load asset files
+    // public void LoadAssets(string folder)
+    // {
+    // }
 }
