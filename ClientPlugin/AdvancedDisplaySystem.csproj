@@ -490,7 +490,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Core\Core.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -500,9 +499,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="Core\core.lua" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Lib.Harmony" Version="2.3.3" />
+    <PackageReference Include="NLua">
+      <Version>1.7.2</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="GUI\" />

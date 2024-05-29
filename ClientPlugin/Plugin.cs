@@ -1,127 +1,86 @@
 ﻿using HarmonyLib;
-using Sandbox.ModAPI;
-using System.Reflection;
+using NLua;
+using Sandbox.Game.World;
 using System;
+using System.Reflection;
 using VRage.Plugins;
-using cvusmo.AdvancedDisplaySystem;
+using VRage.Utils;
 
-public class Plugin : IPlugin, IDisposable
+namespace cvusmo.AdvancedDisplaySystem
 {
-    public const string Name = "AdvancedDisplaySystem";
-    public static Plugin Instance { get; private set; }
-
-    private Core _core;
-    private bool _coreInitialized = false;
-    private bool _playerInCockpit;
-    private IMyCockpit _currentCockpit;
-
-    public void Init(object gameInstance)
+    public class Plugin : IPlugin, IDisposable
     {
-        try
+        public const string Name = "AdvancedDisplaySystem";
+        public static Plugin Instance { get; private set; }
+        private bool _coreInitialized = false;
+        private Lua _lua;
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        public void Init(object gameInstance)
         {
+            MyLog.Default.WriteLine($"[{Name}] Init Start");
             Instance = this;
 
-            // One-time initialization code
-            var harmony = new Harmony(Name);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
-
-            MyAPIGateway.Utilities.ShowMessage(Name, "Plugin Init Start");
-
-            if (MyAPIGateway.Session == null)
+            try
             {
-                MyAPIGateway.Utilities.ShowMessage(Name, "Session is null");
-                return;
+                Harmony harmony = new Harmony(Name);
+                harmony.PatchAll(Assembly.GetExecutingAssembly());
+                MyLog.Default.WriteLine($"[{Name}] Harmony patched");
+            }
+            catch (Exception ex)
+            {
+                MyLog.Default.WriteLine($"[{Name}] Harmony patching failed: {ex.Message}");
             }
 
-            MyAPIGateway.Session.OnSessionReady += OnSessionReady;
+            MyLog.Default.WriteLine($"[{Name}] Init End");
         }
-        catch (Exception ex)
-        {
-            MyAPIGateway.Utilities.ShowMessage(Name, $"Init Exception: {ex.Message}");
-            throw;
-        }
-    }
 
-    private void OnSessionReady()
-    {
-        try
+        public void Update()
         {
-            if (MyAPIGateway.Session?.LocalHumanPlayer == null)
+            if (MySession.Static != null && !_coreInitialized)
             {
-                MyAPIGateway.Utilities.ShowMessage(Name, "LocalHumanPlayer is null");
-                return;
+                _coreInitialized = true;
+                MyLog.Default.WriteLine($"[{Name}] MySession.Static is not null, initializing core");
+                InitializeCore();
             }
-
-            MyAPIGateway.Utilities.ShowMessage(Name, "AdvancedDisplaySystem Session Ready");
-            _core = new Core();
-            _coreInitialized = true;
-            MyAPIGateway.Utilities.ShowMessage(Name, "AdvancedDisplaySystem Core Initialized");
         }
-        catch (Exception ex)
-        {
-            MyAPIGateway.Utilities.ShowMessage(Name, $"AdvancedDisplaySystem Core Initialization Exception: {ex.Message}");
-            throw;
-        }
-    }
 
-    public void Update()
-    {
-        if (_coreInitialized)
+        private void InitializeCore()
         {
-            var player = MyAPIGateway.Session.LocalHumanPlayer;
-            if (player?.Controller?.ControlledEntity?.Entity is IMyCockpit cockpit)
+            if (_coreInitialized)
             {
-                if (!_playerInCockpit)
+                try
                 {
-                    _playerInCockpit = true;
-                    _currentCockpit = cockpit;
-                    OnPlayerEnterCockpit(cockpit);
+                    string pluginDirectory = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    string luaFilePath = System.IO.Path.Combine(pluginDirectory, "core.lua");
+
+                    _lua = new Lua();
+                    _lua.DoFile(luaFilePath);
+                    _lua["LogMessage"] = (Action<string>)LogMessage;
+                    MyLog.Default.WriteLine($"[{Name}] Core initialized");
+
+                    _lua.GetFunction("ShowPluginMessage").Call();
+                }
+                catch (Exception ex)
+                {
+                    MyLog.Default.WriteLine($"[{Name}] Lua initialization failed: {ex.Message}");
                 }
             }
-            else if (_playerInCockpit)
-            {
-                _playerInCockpit = false;
-                OnPlayerExitCockpit(_currentCockpit);
-                _currentCockpit = null;
-            }
         }
-    }
 
-    private void OnPlayerEnterCockpit(IMyCockpit cockpit)
-    {
-        MyAPIGateway.Utilities.ShowMessage(Name, "Player entered cockpit");
-        _core.UpdateCockpitScreens("Player entered cockpit");
-    }
-
-    private void OnPlayerExitCockpit(IMyCockpit cockpit)
-    {
-        MyAPIGateway.Utilities.ShowMessage(Name, "Player exited cockpit");
-        _core.UpdateCockpitScreens("Player exited cockpit");
-    }
-
-    public void Dispose()
-    {
-        // Clean up resources
-        _core = null;
-        if (MyAPIGateway.Session != null)
+        private void LogMessage(string message)
         {
-            MyAPIGateway.Session.OnSessionReady -= OnSessionReady;
+            MyLog.Default.WriteLine($"[{Name}] {message}");
+        }
+        public void Dispose()
+        {
+            MyLog.Default.WriteLine($"[{Name}] Dispose called");
+            _lua?.Dispose();
+        }
+
+        public void HandleInput()
+        {
+            // Handle input if needed
         }
     }
-
-    public void HandleInput()
-    {
-        // Handle input if needed
-    }
-
-    // Uncomment and use this method to create a plugin configuration dialog
-    // public void OpenConfigDialog()
-    // {
-    //     MyGuiSandbox.AddScreen(new MyPluginConfigDialog());
-    // }
-
-    // Uncomment and use this method to load asset files
-    // public void LoadAssets(string folder)
-    // {
-    // }
 }
