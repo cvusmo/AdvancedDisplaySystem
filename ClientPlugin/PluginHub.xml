@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
   <Id>cvusmo/AdvancedDisplaySystem</Id>
-  <GroupId>TODO: github-user/project-name</GroupId>
+  <GroupId>cvusmo/AdvancedDisplaySystem</GroupId>
   <FriendlyName>AdvancedDisplaySystem</FriendlyName>
   <Author>cvusmo</Author>
   <Commit>TODO: Git commit hash</Commit>
