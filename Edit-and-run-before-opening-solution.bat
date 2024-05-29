@@ -1,0 +1,5 @@
+@echo off
+
+mklink /J Bin64 "C:\Program Files (x86)\Steam\steamapps\common\SpaceEngineers\Bin64"
+
+pause

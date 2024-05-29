@@ -10,7 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		Edit-and-run-before-opening-solution.bat = Edit-and-run-before-opening-solution.bat
 		README.md = README.md
-		ReplaceGuidsAndRename.py = ReplaceGuidsAndRename.py
 	EndProjectSection
 EndProject
 Global
@@ -28,5 +27,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {32ACEE74-8E4C-4DE3-B170-A70CDE4EEF73}
 	EndGlobalSection
 EndGlobal
