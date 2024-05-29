@@ -1,50 +1,86 @@
-﻿using System;
+﻿using HarmonyLib;
+using NLua;
+using Sandbox.Game.World;
+using System;
 using System.Reflection;
-using HarmonyLib;
 using VRage.Plugins;
+using VRage.Utils;
 
-namespace ClientPlugin
+namespace cvusmo.AdvancedDisplaySystem
 {
-    // ReSharper disable once UnusedType.Global
     public class Plugin : IPlugin, IDisposable
     {
         public const string Name = "AdvancedDisplaySystem";
         public static Plugin Instance { get; private set; }
+        private bool _coreInitialized = false;
+        private Lua _lua;
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         public void Init(object gameInstance)
         {
+            MyLog.Default.WriteLine($"[{Name}] Init Start");
             Instance = this;
 
-            // TODO: Put your one time initialization code here.
-            Harmony harmony = new Harmony(Name);
-            harmony.PatchAll(Assembly.GetExecutingAssembly());
-        }
+            try
+            {
+                Harmony harmony = new Harmony(Name);
+                harmony.PatchAll(Assembly.GetExecutingAssembly());
+                MyLog.Default.WriteLine($"[{Name}] Harmony patched");
+            }
+            catch (Exception ex)
+            {
+                MyLog.Default.WriteLine($"[{Name}] Harmony patching failed: {ex.Message}");
+            }
 
-        public void Dispose()
-        {
-            // TODO: Save state and close resources here, called when the game exits (not guaranteed!)
-            // IMPORTANT: Do NOT call harmony.UnpatchAll() here! It may break other plugins.
-
-            Instance = null;
+            MyLog.Default.WriteLine($"[{Name}] Init End");
         }
 
         public void Update()
         {
-            // TODO: Put your update code here. It is called on every simulation frame!
+            if (MySession.Static != null && !_coreInitialized)
+            {
+                _coreInitialized = true;
+                MyLog.Default.WriteLine($"[{Name}] MySession.Static is not null, initializing core");
+                InitializeCore();
+            }
         }
 
-        // TODO: Uncomment and use this method to create a plugin configuration dialog
-        // ReSharper disable once UnusedMember.Global
-        /*public void OpenConfigDialog()
+        private void InitializeCore()
         {
-            MyGuiSandbox.AddScreen(new MyPluginConfigDialog());
-        }*/
+            if (_coreInitialized)
+            {
+                try
+                {
+                    string pluginDirectory = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                    string luaFilePath = System.IO.Path.Combine(pluginDirectory, "core.lua");
 
-        //TODO: Uncomment and use this method to load asset files
-        /*public void LoadAssets(string folder)
+                    _lua = new Lua();
+                    _lua.DoFile(luaFilePath);
+                    _lua["LogMessage"] = (Action<string>)LogMessage;
+                    MyLog.Default.WriteLine($"[{Name}] Core initialized");
+
+                    _lua.GetFunction("ShowPluginMessage").Call();
+                }
+                catch (Exception ex)
+                {
+                    MyLog.Default.WriteLine($"[{Name}] Lua initialization failed: {ex.Message}");
+                }
+            }
+        }
+
+        private void LogMessage(string message)
         {
+            MyLog.Default.WriteLine($"[{Name}] {message}");
+        }
+        public void Dispose()
+        {
+            MyLog.Default.WriteLine($"[{Name}] Dispose called");
+            _lua?.Dispose();
+        }
 
-        }*/
+        public void HandleInput()
+        {
+            // Handle input if needed
+        }
     }
 }
